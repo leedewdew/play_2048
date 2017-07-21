@@ -4,6 +4,7 @@ import numpy as np
 import pythoncom
 import pyHook
 import random
+import sys
 
 # global variable
 enter_key = ''
@@ -35,11 +36,15 @@ def grid_Rand_Fill(choice,key=None):
         for col in range(4):
             if not grid_board[row][col]:
                 blank_block.append(row*4+col)
-    # random choose a blank block
-    block_to_fill = random.choice(blank_block)
-    row_to_fill = block_to_fill / 4
-    col_to_fill = block_to_fill % 4
-    grid_board[row_to_fill][col_to_fill] = random.choice([2,4])
+    if len(blank_block):
+        # random choose a blank block
+        block_to_fill = random.choice(blank_block)
+        row_to_fill = block_to_fill / 4
+        col_to_fill = block_to_fill % 4
+        grid_board[row_to_fill][col_to_fill] = random.choice([2,4])
+    else:
+        return True
+    return False
 
 def shiftRow(lst,direction):
     # get non-zero element
@@ -49,84 +54,69 @@ def shiftRow(lst,direction):
         shift_row_list.append(0)
     return  shift_row_list
 
-def mergeRow(lst,direction):
-    pass
-
-def merge_Grid(enter_key):
+# merge row with enter_key=left
+def mergeRow():
     global grid_board
     shift_row_list= []
     merge_row_list = []
-    shift_list_compen_zero = []
+    for row in range(4):
+        grid_board[row] = shiftRow(grid_board[row], 'A')
+    # display_Grid() # debug
+    print  # debug
+    for row in range(4):
+        for col in range(4):
+            if col <= 2 and (grid_board[row][col]) and (grid_board[row][col] == grid_board[row][col + 1]):
+                grid_board[row][col] *= 2
+                # remove element in case merging with next one
+                grid_board[row][col + 1] = 0
+
+            merge_row_list.append(grid_board[row][col])
+
+        # merge row, then assign to grid_board row
+        grid_board[row] = shiftRow(merge_row_list, 'A')
+        merge_row_list = []
+
+def transferGrid(lst):
+    gridToLine = [lst[row][col] for col in range(4) for row in range(4)]
+    lineToGrid = [gridToLine[4*i:4*i+4] for i in range(4)]
+    return lineToGrid
+
+def merge_Grid(enter_key):
+    global grid_board
+    # shift_row_list= []
+    merge_row_list = []
+    # shift_list_compen_zero = []
 
     if enter_key == 'W': # up
-        for col in range(4):
-            for row in range(4):
-                pass
+        grid_board = transferGrid(grid_board)
+        mergeRow()
+        grid_board = transferGrid(grid_board)
     elif enter_key == 'S': # down
-        for col in range(4):
-            for row in range(4):
-                pass
+        grid_board = transferGrid(grid_board)
+        [grid_board[row].reverse() for row in range(4)]
+        mergeRow()
+        [grid_board[row].reverse() for row in range(4)]
+        grid_board = transferGrid(grid_board)
     elif enter_key == 'A': # left
-        # shift and merge, then update grid_board
-        for row in range(4):
-            grid_board[row] = shiftRow(grid_board[row], 'A')
-        # display_Grid() # debug
-        # print #debug
-        for row in range(4):
-            for col in range(4):
-                if col <= 2:
-                    if (grid_board[row][col]) and (grid_board[row][col] == grid_board[row][col+1]):
-                        grid_board[row][col] *= 2
-                        # remove element in case merging with next one
-                        grid_board[row][col+1] = 0
-
-                merge_row_list.append(grid_board[row][col])
-
-            # merge row, then assign to grid_board row
-            grid_board[row] = shiftRow(merge_row_list,'A')
-            # display_Grid()  # debug
-            merge_row_list = []
+        mergeRow()
     elif enter_key == 'D': # right
         [grid_board[row].reverse() for row in range(4)]
-        display_Grid()  # debug
-        # shift and merge, then update grid_board
-        for row in range(4):
-            grid_board[row] = shiftRow(grid_board[row], 'A')
-        # display_Grid() # debug
-        print #debug
-        for row in range(4):
-            for col in range(4):
-                if col <= 2 and (grid_board[row][col]) and (grid_board[row][col] == grid_board[row][col+1]):
-                    grid_board[row][col] *= 2
-                    # remove element in case merging with next one
-                    grid_board[row][col+1] = 0
-
-                merge_row_list.append(grid_board[row][col])
-
-            # merge row, then assign to grid_board row
-            grid_board[row] = shiftRow(merge_row_list,'A')
-            merge_row_list = []
-
+        mergeRow()
         [grid_board[row].reverse() for row in range(4)]
-        display_Grid()  # debug
-        print # debug
-
-def is_Over():
-    pass
 
 def main(event):
     global enter_key, state
     enter_key = event.Key
     print "enter_key:", enter_key
     if state == 'start':
-        grid_Rand_Fill('start')
+        isOver = grid_Rand_Fill('start')
         state = 'update'
     else:
         merge_Grid(enter_key)
-        grid_Rand_Fill('update')
+        isOver = grid_Rand_Fill('update')
 
     display_Grid()
-    if is_Over():
+    if isOver:
         print "Over!"
     return True
 
